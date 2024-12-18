@@ -1,6 +1,13 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
+"""
+    Тест поиска.
+"""
 from time import sleep
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 driver = webdriver.Firefox()
@@ -8,21 +15,35 @@ driver = webdriver.Firefox()
 driver.get("https://kinopoisk.ru/")
 
 title = driver.title
-sleep(60)  # Это время на решение капчи.
+timeout = 60  # Это время на решение капчи.
 
-driver.find_element(By.CSS_SELECTOR, ".styles_loginButton__LWZQp").click()
+try:  # Поставить галку "Я не робот".
+    driver.find_element(By.CSS_SELECTOR, ".CheckboxCaptcha-Button").click()
+except NoSuchElementException:
+    pass
+
+try:  # Закрыть коммуникацию.
+    WebDriverWait(driver, timeout).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR,
+                                        ".styles_root__EjoL7"))
+    )
+    driver.find_element(By.CSS_SELECTOR, ".styles_root__EjoL7").click()
+except TimeoutException:
+    pass
+except NoSuchElementException:
+    pass
+
+driver.find_element(By.TAG_NAME, "input").send_keys("Bad Sisters")
 sleep(5)
 
-driver.find_element(By.XPATH, '//*[@id="passp-field-login"]').send_keys("example@yandex.ru")
+driver.find_element(By.CSS_SELECTOR, ".search-form-submit-button__icon").\
+                    click()
 sleep(5)
 
-driver.find_element(By.XPATH, '//*[@id="passp:sign-in"]').click()
-sleep(5)
-
-driver.find_element(By.XPATH, '//*[@id="passp-field-passwd"]').send_keys("P@ssw0rd")
-sleep(5)
-
-driver.find_element(By.XPATH, '//*[@id="passp:sign-in"]').click()
-sleep(5)
+result_text = driver.find_element(By.CSS_SELECTOR, ".search_results_topText").\
+                                  text
+result_list = result_text.split(": ")
 
 driver.quit()
+
+print(f"Количество результатов по запросу {int(result_list[2])}")
